@@ -256,7 +256,7 @@ fn_soup_skin_samples@meta.data$isDoublet <- sce$scDblFinder.class
 DimPlot(fn_soup_skin_samples, reduction = 'umap', group.by = "isDoublet")
 
 ## create a new object(fnd_soup_skin_samples) and filter out the doublet
-fnd_soup_skin_samples <- subset(fn_soup_skin_samples, isDoublet == "doublet")
+fnd_soup_skin_samples <- subset(fn_soup_skin_samples, isDoublet == "singlet")
 DimPlot(fnd_soup_skin_samples, reduction = 'umap', group.by = "isDoublet")
 DimPlot(fnd_soup_skin_samples, reduction = 'umap', label = TRUE, label.size = 3)
 # normalizing
