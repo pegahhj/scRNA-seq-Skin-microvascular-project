@@ -1,5 +1,5 @@
-##mouse_microvascular_skin_2022-2023
-##soup correction in r script 
+## mouse_microvascular_skin_2022-2023
+## soup correction in r script 
 library(Seurat)
 library(sctransform)
 library(harmony)
@@ -87,7 +87,7 @@ sc = setClusters(sc,cluster$Cluster)
 sc = autoEstCont(sc)
 soup_Y3.data = adjustCounts(sc)
 
-##create seurat object and metadata
+## create seurat object and metadata
 soup_skin_samples <- CreateSeuratObject(counts = cbind(soup_17H.data , soup_39Q.data, soup_41H.data, soup_B3.data, soup_C2.data, soup_D4.data, soup_E1.data, soup_F3.data, soup_I4.data, soup_Y3.data), project = "inkmouseskin", min.cells = 5)
 
 soup_skin_samples@meta.data$sample <- c(rep("s39Q", ncol(soup_39Q.data)), rep("sD4", ncol(soup_D4.data)), rep("sC2", ncol(soup_C2.data)), rep("sY3", ncol(soup_Y3.data)), rep("sB3", ncol(soup_B3.data)), rep("sE1", ncol(soup_E1.data)), rep("sI4", ncol(soup_I4.data)), rep("sF3", ncol(soup_F3.data)), rep("s17H", ncol(soup_17H.data)), rep("s41H", ncol(soup_41H.data)))
@@ -103,7 +103,7 @@ soup_skin_samples <- PercentageFeatureSet(soup_skin_samples, pattern = "^mt-", c
 
 saveRDS(soup_skin_samples, file = "soup_skin_samples.rds")
 
-##Quality control & doublet correction & filter & normalization
+## Quality control & doublet correction & filter & normalization
 
 soup_skin_samples <- readRDS("soup_skin_samples.rds")
 
@@ -793,7 +793,7 @@ dds$condition <- relevel(dds$condition, ref = "young")
 
 dds <- DESeq(dds, test="LRT", reduced=~1)
 
-#export normalized read counts
+# export normalized read counts
 
 normCountsDDS <- counts(dds, normalized = T)
 write.csv(normCountsDDS, "normCountsDDS.csv")
@@ -1043,7 +1043,7 @@ FeaturePlot(wwwECclean, features = "scDblFinder.stats", label = TRUE, label.size
 saveRDS(wwwECclean, file = "wwwECclean.rds")
 
 
-##to perform DESeq only on clean EC cluster
+## to perform DESeq only on clean EC cluster
 # counts aggregate to sample level
 seu.filtered <- readRDS("wwwECclean.rds")
 
@@ -1212,9 +1212,7 @@ cts <- AggregateExpression(CluterECclean,
 cts <- cts$SCT
 #to export count as a CSV file https://www.biostars.org/p/437713/
 
-write.csv(cts, append = F, 
-          'C:/Users/pegah/Desktop/skinProject/fromTheTop/soupCorrection/DEgeneAnalysis/finalDESeqTables.EC.0.1/2nddoubletCorrection&subsetTargetECsubclusters/ctsCounts.csv', 
-          sep = ',', row.names = T, col.names = T, quote = T)
+write.csv(cts, append = F, 'C:/Users/pegah/Desktop/skinProject/~/ctsCounts.csv', sep = ',', row.names = T, col.names = T, quote = T)
 
 
 
@@ -1249,9 +1247,6 @@ dds <- dds[keep,]
 # Transform counts for data visualization
 rld <- rlog(dds, blind=TRUE)
 vsd <- vst(dds, blind=FALSE)
-
-#of the best workflows about DESeq https://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#principal-component-plot-of-the-samples
-##!pheatmap https://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#principal-component-plot-of-the-samples
 ntd <- normTransform(dds)
 
 select <- order(rowMeans(counts(dds,normalized=FALSE)),
