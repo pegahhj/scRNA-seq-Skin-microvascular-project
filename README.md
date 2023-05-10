@@ -1338,7 +1338,7 @@ ggplot2::ggplot(ECclean_DESeq2_out_tr_young, aes(x = log10(baseMean), y = log2Fo
 
 
 ### pathway analysis
-###https://www.youtube.com/watch?v=Bzu4_yDcBLY
+
 #pathway analysis
 library(Seurat)
 library(tidyverse)
@@ -1435,7 +1435,7 @@ enrich.H.df %>%
        title = "Mtb significant genes \nenriched in Hallmark gene sets")
 
 
-################################https://github.com/hawn-lab/workshops_UW_Seattle/commit/b8fa2bf94eff5693d8ab2d79c8f3dc3423796f07
+################################
 ######GSEA########
 #this method could not be used for more than two condition comparison, if your data has more than two groups or condition separate group of interest before
 
@@ -1540,38 +1540,6 @@ write.table(gsea.H, file="GSEA2_only_tr_veh_EC.csv", sep=",", row.names = F)
 # Save a single object to a file
 saveRDS(gsea.H, "GSEA2_only_tr_veh_EC.rds")
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-####visualization####
-#https://bioconductor.statistik.tu-dortmund.de/packages/3.8/bioc/vignettes/enrichplot/inst/doc/enrichplot.html#:~:text=Running%20score%20and%20preranked%20list%20are%20traditional%20methods%20for%20visualizing,set%20and%20the%20enrichment%20score.&text=The%20gsearank%20function%20plot%20the,to%20the%20specific%20gene%20set.
-#https://guangchuangyu.github.io/2016/11/showcategory-parameter-for-visualizing-comparecluster-output/
-class(enrich.H)
-#[1] "enrichResult"
-#attr(,"package")
-#[1] "DOSE"
-
-dotplot(enrich.H, showCategory=30) + ggtitle("dotplot for ORA")
-
-#Users can use formula to specify derived variable of x-axis.
-
-N <- as.numeric(sub("\\d+/", "", enrich.H[1, "BgRatio"]))
-N
-
-dotplot(enrich.H, showCategory=15, x = ~Count/N) + ggplot2::xlab("Rich Factor")
-
-###Gene-Concept Network
 ## convert gene ID to Symbol
 edox <- setReadable(enrich.H, 'org.Mm.eg.db', 'ENTREZID')
 cnetplot(edox, foldChange=geneList)
