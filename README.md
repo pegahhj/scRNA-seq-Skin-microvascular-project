@@ -260,7 +260,7 @@ fnd_soup_skin_samples <- subset(fn_soup_skin_samples, isDoublet == "doublet")
 DimPlot(fnd_soup_skin_samples, reduction = 'umap', group.by = "isDoublet")
 DimPlot(fnd_soup_skin_samples, reduction = 'umap', label = TRUE, label.size = 3)
 # normalizing
-  fnd_soup_skin_samples %>% 
+  fndn_soup_skin_samples <- fnd_soup_skin_samples %>% 
   SCTransform(method = "glmGamPoi", vars.to.regress = "percent.mt", verbose = FALSE, vst.flavor = "v2") %>% 
   RunPCA(npcs = 20, verbose = FALSE) %>% 
   RunHarmony("sample", plot_convergence = TRUE, assay.use = "SCT", reduction.save = "harmony2") %>% 
@@ -270,7 +270,7 @@ DimPlot(fnd_soup_skin_samples, reduction = 'umap', label = TRUE, label.size = 3)
   identity()
 ## save the new object
 saveRDS(fndn_soup_skin_samples, file = "C:/Users/~/fnd_soup_skin_samples.rds")
-fndn_soup_skin_samples
+
 ## Cell cycle estimation
 ## Next, we will use known cell cycle genes to predict in which cell cycle state cells are currently in. We will use this information later on in the clustering analysis to correct for cell cycle state, so that we don't get separate clusters of cell types that correspond to different cycle states.
 
@@ -290,27 +290,10 @@ ggplot(fndc_soup_skin_samples,aes(Phase,n, fill = Phase)) +
   geom_bar(stat ="identity") +
   scale_fill_brewer(palette = "Dark2")
 
-## ad filtered_normalized_doubletCorrected_normalized_soup_skin_samples
+## load filtered_normalized_doubletCorrected_normalized_soup_skin_samples
 fndn_soup_skin_samples <- readRDS("fndn_soup_skin_samples.rds")
 DimPlot(fndn_soup_skin_samples, reduction = "umap", label = TRUE, label.size = 5)
-#re-perform QC plots
-# Create metadata dataframe
-metadata <- fndn_soup_skin_samples@meta.data
-# Add cell IDs to metadata
-metadata$cells <- rownames(metadata)
-# Rename columns
-metadata <- metadata %>%
-  dplyr::rename(seq_folder = orig.ident,
-                nUMI = nCount_RNA,
-                nGene = nFeature_RNA)
-
-
-
-# Add metadata back to Seurat object
-fndn_soup_skin_samples@meta.data <- metadata
-# Create .RData object to load at any time
-save(fndn_soup_skin_samples, file="C:/Users/pegah/Desktop/skinProject/fromTheTop/soupCorrection/fndn_soup_skin_samples.RData")
-
+## re-perform QC plots to see differences after filter
 # Visualize the number of cell counts per sample
 metadata %>% 
   ggplot(aes(x=sample, fill=sample)) + 
@@ -367,20 +350,19 @@ metadata %>%
   geom_density(alpha = 0.2) +
   theme_classic() +
   geom_vline(xintercept = 0.8)
-#plots
+
+
+## different visualisations
 DimPlot(fndn_soup_skin_samples, reduction = "umap", label = TRUE, label.size = 5)
-
 DimPlot(fndn_soup_skin_samples, reduction = "umap", pt.size = .2, split.by = 'batch', label.size = 3)
-
 DimPlot(fndn_soup_skin_samples, reduction = "umap", pt.size = .2, split.by = 'condition', label.size = 3)
 DimPlot(fndn_soup_skin_samples, reduction = "umap", pt.size = .1, split.by = 'sample', ncol=5, label=T)
 DimPlot(fndn_soup_skin_samples, reduction = "umap", pt.size = .1, split.by = 'age', ncol=3, label=T)
 
-
-
-#to find markers
+## find markers
 fndn_soup_skin_samples.markers <- FindAllMarkers(object = fndn_soup_skin_samples, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
 
+## plot 5 top markers 
 markers.to.plot <- head(subset(fndn_soup_skin_samples.markers, cluster==0), n=5)$gene
 markers.to.plot <- append(markers.to.plot, head(subset(fndn_soup_skin_samples.markers, cluster==1), n=5)$gene)
 markers.to.plot <- append(markers.to.plot, head(subset(fndn_soup_skin_samples.markers, cluster==2), n=5)$gene)
@@ -406,16 +388,17 @@ markers.to.plot <- append(markers.to.plot, head(subset(fndn_soup_skin_samples.ma
 DotPlot(fndn_soup_skin_samples, features = markers.to.plot[!duplicated(markers.to.plot)], cols = c("yellow", "red"), dot.scale = 8) + RotatedAxis() + scale_y_discrete(limits = rev)
 ggsave("fndn_soup_skin_samplesDotPlot_top5.png", width=30, height=10, scale=0.7)
 
+## write .csv file of all markers
 write.csv(fndn_soup_skin_samples.markers, "C:/Users/pegah/Desktop/skinProject/fromTheTop/fndn_soup_skin_samples.markers.csv")
 
-### The final step would be changing the cluster names (Which are numbers) to the cell names
+### The final step would be changing the cluster names (Which are numbers) to the cell type names
 ### You'll get the name according to you annotation results. 
 ### Make sure you insert the names in correct order. In this code the name of the cells is according
 ### to the names that you give to the code. In other word, you always need to name the clusters 
 ### from cluster 0 to the end. If you skip one cluster, that cluster will lose its name.
 
-##cluster-identification
-#to identify the cluster you can use databases such as enrichr (it includes tabula, Pangia, etc. super helpful), Tabula Muris, PangiaoDB,& automated ways such as
+## cluster-identification
+#to identify the cluster you can use databases such as enrichr (it includes tabula, Pangia, etc. super helpful), Tabula Muris, PangiaoDB, https://www.immunesinglecell.org/atlasList& automated ways 
 fndn_soup_skin_samples <- readRDS("fndn_soup_skin_samples.rds")
 
 new.cluster.ids <- c("0-Basal cell of Epidermis", "1-Fibroblasts", "2-Smooth muscle cell","3-Keratinocyte stem cell", "4-Vasculature EC", "5-Epidermal cell", "6-Langerhans cell", "7-Keratinocytes-Epidermal cell", "8-Keratinocyte stem cell", "9-Smoth muscle cell", "10-Epidermal cell-Keratinocyte", "11-basal cell of epidermis", "12-Smooth muscle cell", "13-Keratinocyte stem cell", "14-Fat smooth muscle cell", "15-Epidermal cell", "16-Adiopocyte", "17-Vascular smooth muscle cell", "18-Epidermal cell - Keratinocyte", "19-Melanocyte", "20-Leukocyte")
