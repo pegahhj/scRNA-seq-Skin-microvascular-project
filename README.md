@@ -1,26 +1,11 @@
-### scRNA-seq-Skin-microvascular-project
-##scRNA-seq Skin microvascular project- single nuclei RNA-seq
-##running cellranger for each sample
-##cellranger job
-
-#!/bin/bash
-#SBATCH --time=24:00:00
-#SBATCH --cpus-per-task=4
-#SBATCH --mem-per-cpu=10G
-#SBATCH --job-name=cellranger_GFP_Y3
-#SBATCH --output=jlog_cellranger_GFP_Y3
-
-date
-
-~/projects/rrg-glettre/programs/CellRanger/cellranger-7.0.1/cellranger count --id sample_Y3_GFP --sample Y3_02KK48_11258 --fastqs ~/projects/rrg-glettre/sequencing_datastore/raw_data/scRNAseq_skin-senescense_20220928 --transcriptome ~/projects/rrg-glettre/sequencing_datastore/analyses/scRNAseq_skin-senescense_20220928/align_EGFP/mouse_GFP --localcores 4 --localmem 40
-
-date
-
-##soup correction in r script in server
+##mouse_microvascular_skin_2022-2023
+##soup correction in r script 
 library(Seurat)
 library(sctransform)
 library(harmony)
 library(SoupX)
+library(tidyverse)
+library(ggplot2)
 
 toc = Seurat::Read10X(file.path('/lustre03/project/6003727/sequencing_datastore/analyses/scRNAseq_skin-senescense_20220928/sample_17H/outs/filtered_feature_bc_matrix'))
 tod = Seurat::Read10X(file.path('/lustre03/project/6003727/sequencing_datastore/analyses/scRNAseq_skin-senescense_20220928/sample_17H/outs/raw_feature_bc_matrix'))
@@ -102,6 +87,7 @@ sc = setClusters(sc,cluster$Cluster)
 sc = autoEstCont(sc)
 soup_Y3.data = adjustCounts(sc)
 
+##create seurat object and metadata
 soup_skin_samples <- CreateSeuratObject(counts = cbind(soup_17H.data , soup_39Q.data, soup_41H.data, soup_B3.data, soup_C2.data, soup_D4.data, soup_E1.data, soup_F3.data, soup_I4.data, soup_Y3.data), project = "inkmouseskin", min.cells = 5)
 
 soup_skin_samples@meta.data$sample <- c(rep("s39Q", ncol(soup_39Q.data)), rep("sD4", ncol(soup_D4.data)), rep("sC2", ncol(soup_C2.data)), rep("sY3", ncol(soup_Y3.data)), rep("sB3", ncol(soup_B3.data)), rep("sE1", ncol(soup_E1.data)), rep("sI4", ncol(soup_I4.data)), rep("sF3", ncol(soup_F3.data)), rep("s17H", ncol(soup_17H.data)), rep("s41H", ncol(soup_41H.data)))
@@ -117,96 +103,8 @@ soup_skin_samples <- PercentageFeatureSet(soup_skin_samples, pattern = "^mt-", c
 
 saveRDS(soup_skin_samples, file = "soup_skin_samples.rds")
 
-##job for running r script
-#!/bin/bash
-#SBATCH --time=24:00:00
-#SBATCH --cpus-per-task=1
-#SBATCH --mem-per-cpu=80G
-#SBATCH --job-name=LASTNORMAL_SOUP_r
-#SBATCH --output=jlog_LASTNORMAL_SOUP_r
+##Quality control & doublet correction & filter & normalization
 
-date
-module load geos/3.9.1
-module load StdEnv/2020 r/4.2.1
-module load StdEnv/2020 gcc/9.3.0 hdf5/1.12.1
-Rscript run_lastNormalization.R
-
-date
-
-
-##seurat script for creating seurat object and normalizing it (r)
-library(Seurat)
-library(sctransform)
-library(harmony)
-
-sample_17H.data <- Read10X_h5('/lustre03/project/6003727/sequencing_datastore/analyses/scRNAseq_skin-senescense_20220928/sample_17H/outs/filtered_feature_bc_matrix.h5', use.names = TRUE)
-sample_39Q.data <- Read10X_h5('/lustre03/project/6003727/sequencing_datastore/analyses/scRNAseq_skin-senescense_20220928/sample_39Q/outs/filtered_feature_bc_matrix.h5', use.names = TRUE)
-sample_41H.data <- Read10X_h5('/lustre03/project/6003727/sequencing_datastore/analyses/scRNAseq_skin-senescense_20220928/sample_41H/outs/filtered_feature_bc_matrix.h5', use.names = TRUE)
-sample_B3.data <- Read10X_h5('/lustre03/project/6003727/sequencing_datastore/analyses/scRNAseq_skin-senescense_20220928/sample_B3/outs/filtered_feature_bc_matrix.h5', use.names = TRUE)
-sample_C2.data <- Read10X_h5('/lustre03/project/6003727/sequencing_datastore/analyses/scRNAseq_skin-senescense_20220928/sample_C2/outs/filtered_feature_bc_matrix.h5', use.names = TRUE)
-sample_D4.data <- Read10X_h5('/lustre03/project/6003727/sequencing_datastore/analyses/scRNAseq_skin-senescense_20220928/sample_D4/outs/filtered_feature_bc_matrix.h5', use.names = TRUE)
-sample_E1.data <- Read10X_h5('/lustre03/project/6003727/sequencing_datastore/analyses/scRNAseq_skin-senescense_20220928/sample_E1/outs/filtered_feature_bc_matrix.h5', use.names = TRUE)
-sample_F3.data <- Read10X_h5('/lustre03/project/6003727/sequencing_datastore/analyses/scRNAseq_skin-senescense_20220928/sample_F3/outs/filtered_feature_bc_matrix.h5', use.names = TRUE)
-sample_I4.data <- Read10X_h5('/lustre03/project/6003727/sequencing_datastore/analyses/scRNAseq_skin-senescense_20220928/sample_I4/outs/filtered_feature_bc_matrix.h5', use.names = TRUE)
-sample_Y3.data <- Read10X_h5('/lustre03/project/6003727/sequencing_datastore/analyses/scRNAseq_skin-senescense_20220928/sample_Y3/outs/filtered_feature_bc_matrix.h5', use.names = TRUE)
-
-skin_samples <- CreateSeuratObject(counts = cbind(sample_39Q.data, sample_D4.data, sample_C2.data, sample_Y3.data, sample_B3.data, sample_E1.data, sample_I4.data, sample_F3.data, sample_17H.data, sample_41H.data), project = "inkmouseskin", min.cells = 5)
-
-skin_samples@meta.data$sample <- c(rep("39Q", ncol(sample_39Q.data)), rep("D4", ncol(sample_D4.data)), rep("C2", ncol(sample_C2.data)), rep("Y3", ncol(sample_Y3.data)), rep("B3", ncol(sample_B3.data)), rep("E1", ncol(sample_E1.data)), rep("I4", ncol(sample_I4.data)), rep("F3", ncol(sample_F3.data)), rep("17H", ncol(sample_17H.data)), rep("41H", ncol(sample_41H.data)))
-
-skin_samples@meta.data$condition <- c(rep("ntr", ncol(sample_39Q.data)), rep("ntr", ncol(sample_D4.data)), rep("ntr", ncol(sample_C2.data)), rep("ntr", ncol(sample_Y3.data)), rep("veh", ncol(sample_B3.data)), rep("veh", ncol(sample_E1.data)), rep("veh", ncol(sample_I4.data)), rep("tr", ncol(sample_F3.data)), rep("tr", ncol(sample_17H.data)), rep("tr", ncol(sample_41H.data)))
-
-skin_samples@meta.data$age <- c(rep("old", ncol(sample_17H.data)), rep("young", ncol(sample_39Q.data)), rep("old", ncol(sample_41H.data)), rep("old", ncol(sample_B3.data)), rep("young", ncol(sample_C2.data)), rep("young", ncol(sample_D4.data)), rep("old", ncol(sample_E1.data)), rep("old", ncol(sample_F3.data)), rep("old", ncol(sample_I4.data)), rep("young", ncol(sample_Y3.data)))
-
-skin_samples@meta.data$batch <- c(rep("batch3", ncol(sample_17H.data)), rep("batch1", ncol(sample_39Q.data)), rep("batch3", ncol(sample_41H.data)), rep("batch2", ncol(sample_B3.data)), rep("batch2", ncol(sample_C2.data)), rep("batch2", ncol(sample_D4.data)), rep("batch3", ncol(sample_E1.data)), rep("batch3", ncol(sample_F3.data)), rep("batch3", ncol(sample_I4.data)), rep("batch2", ncol(sample_Y3.data)))
-
-skin_samples[["percent.mt"]] <- PercentageFeatureSet(skin_samples, pattern = "^mt-")
-skin_samples <- PercentageFeatureSet(skin_samples, pattern = "^mt-", col.name = "percent.mt")
-VlnPlot(skin_samples, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
-plot1 <- FeatureScatter(skin_samples, feature1 = "nCount_RNA", feature2 = "percent.mt")
-plot2 <- FeatureScatter(skin_samples, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
-plot1 + plot2
-
-skin_samples <- subset(skin_samples, subset = nFeature_RNA > 200 & nFeature_RNA < 5000 & nCount_RNA < 40000 & percent.mt < 10)
-
-skin_samples <- SCTransform(skin_samples, method = "glmGamPoi", vars.to.regress = "percent.mt", verbose = FALSE, vst.flavor = "v2")
-
-skin_samples <- RunPCA(skin_samples, verbose = FALSE)
-
-options(repr.plot.height = 5, repr.plot.width = 12)
-p1 <- DimPlot(object = skin_samples, reduction = "pca", pt.size = .1, group.by = "sample")
-p2 <- VlnPlot(object = skin_samples, features = "PC_1", group.by = "sample", pt.size = .1)
-p1 + p2
-
-ElbowPlot(skin_samples)
-
-options(repr.plot.height = 2.5, repr.plot.width = 6)
-skin_samples <- skin_samples %>% 
-    RunHarmony("sample", plot_convergence = TRUE, assay.use = "SCT")
-
-harmony_embeddings <- Embeddings(skin_samples, 'harmony')
-harmony_embeddings[1:5, 1:5]
-
-options(repr.plot.height = 5, repr.plot.width = 12)
-p1 <- DimPlot(object = skin_samples, reduction = "harmony", pt.size = .1, group.by = "sample")
-p2 <- VlnPlot(object = skin_samples, features = "harmony_1", group.by = "sample", pt.size = .1)
-p1 + p2
-
-skin_samples <- skin_samples %>% 
-    RunUMAP(reduction = "harmony", dims = 1:20) %>% 
-    FindNeighbors(reduction = "harmony", dims = 1:20) %>% 
-    FindClusters(resolution = 0.5) %>% 
-    identity()
-
-saveRDS(skin_samples, file = "skin_samples.rds")
-
-
-##QC metrics & doublet correction & filter & normalization
-library(Seurat)
-library(sctransform)
-library(harmony)
-library(tidyverse)
-library(ggplot2)
 soup_skin_samples <- readRDS("soup_skin_samples.rds")
 
 VlnPlot(soup_skin_samples, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
@@ -214,7 +112,8 @@ plot1 <- FeatureScatter(soup_skin_samples, feature1 = "nCount_RNA", feature2 = "
 plot2 <- FeatureScatter(soup_skin_samples, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
 plot1 + plot2
 
-#qc metrics
+
+##Quality control metrics
 # Add number of genes per UMI for each cell to metadata
 
 soup_skin_samples$log10GenesPerUMI <- log10(soup_skin_samples$nFeature_RNA) / log10(soup_skin_samples$nCount_RNA)
@@ -298,7 +197,7 @@ metadata %>%
   theme_classic() +
   geom_vline(xintercept = 0.8)
 
-##filtering
+## filter
 
 soup_skin_samples <- subset(soup_skin_samples, 
                             subset = nGene > 250 & 
@@ -307,7 +206,7 @@ soup_skin_samples <- subset(soup_skin_samples,
                               nUMI < 40000 & 
                               log10GenesPerUMI > 0.80 &
                               percent.mt < 20)
-# and Gene-level filtering
+# and Gene-level filter
 counts <- GetAssayData(object = soup_skin_samples, slot = "counts")
 nonzero <- counts > 0
 keep_genes <- Matrix::rowSums(nonzero) >= 10
@@ -315,58 +214,30 @@ filtered_counts <- counts[keep_genes, ]
 filtered_soup_skin_samples <- CreateSeuratObject(filtered_counts, meta.data = soup_skin_samples@meta.data)
 
 saveRDS(filtered_soup_skin_samples, file = "filtered_soup_skin_samples.rds")
-##perform normalization & UMAP before finding doublets
-#normalizing(in compute canada)
 
-filtered_soup_skin_samples <- SCTransform(filtered_soup_skin_samples, method = "glmGamPoi", vars.to.regress = "percent.mt", verbose = FALSE, vst.flavor = "v2")
-
-filtered_soup_skin_samples <- RunPCA(filtered_soup_skin_samples, verbose = FALSE)
-
-options(repr.plot.height = 5, repr.plot.width = 12)
-p1 <- DimPlot(object = filtered_soup_skin_samples, reduction = "pca", pt.size = .1, group.by = "sample")
-p2 <- VlnPlot(object = filtered_soup_skin_samples, features = "PC_1", group.by = "sample", pt.size = .1)
-p1 + p2
-
-ElbowPlot(filtered_soup_skin_samples)
-
-options(repr.plot.height = 2.5, repr.plot.width = 6)
+## perform normalization & UMAP, before finding doublets
+# normalizing
 filtered_soup_skin_samples <- filtered_soup_skin_samples %>% 
-  RunHarmony("sample", plot_convergence = TRUE, assay.use = "SCT")
-
-harmony_embeddings <- Embeddings(filtered_soup_skin_samples, 'harmony')
-harmony_embeddings[1:5, 1:5]
-
-options(repr.plot.height = 5, repr.plot.width = 12)
-p1 <- DimPlot(object = filtered_soup_skin_samples, reduction = "harmony", pt.size = .1, group.by = "sample")
-p2 <- VlnPlot(object = filtered_soup_skin_samples, features = "harmony_1", group.by = "sample", pt.size = .1)
-p1 + p2
-
-filtered_soup_skin_samples <- filtered_soup_skin_samples %>% 
-  RunUMAP(reduction = "harmony", dims = 1:20) %>% 
-  FindNeighbors(reduction = "harmony", dims = 1:20) %>% 
+  SCTransform(method = "glmGamPoi", vars.to.regress = "percent.mt", verbose = FALSE, vst.flavor = "v2") %>% 
+  RunPCA(npcs = 20, verbose = FALSE) %>% 
+  RunHarmony("sample", plot_convergence = TRUE, assay.use = "SCT", reduction.save = "harmony2") %>% 
+  RunUMAP(reduction = "harmony2", dims = 1:20) %>% 
+  FindNeighbors(reduction = "harmony2", dims = 1:20) %>% 
   FindClusters(resolution = 0.5) %>% 
   identity()
 
+DimPlot(filtered_soup_skin_samples, reduction = "umap", label = TRUE, label.size = 5)
+
 saveRDS(filtered_soup_skin_samples, file = "fn_soup_skin_samples.rds")
-#perform UMAP before doublet finding to have the original one for comparing to after doublet correction one
 
-DimPlot(fn_soup_skin_samples, reduction = "umap", label = TRUE, label.size = 5)
-
-
-fn_soup_skin_samples <- fn_soup_skin_samples %>% 
-  FindClusters(resolution = 0.1) %>% 
-  identity()
-##doublet correction
-
-#filter out doublets: scDblFinder-->integrated data (note: if you have very large differences in number of cells between samples the scores will not be directly comparable. We are working on improving this, but in the meantime it would be preferable to stratify similar samples and threshold the sets separately)
-
+## Doublet correction
 # load libraries
 BiocManager::install("plger/scDblFinder")
 BiocManager::install("SingleCellExperiment")
 library(scDblFinder)
 library(SingleCellExperiment)
 
-##finding doublets
+## finding doubletScore 
 DefaultAssay(fn_soup_skin_samples) <- "RNA"
 sce <- as.SingleCellExperiment(fn_soup_skin_samples)
 set.seed(2022)
@@ -374,27 +245,34 @@ sce <- scDblFinder(sce, clusters = "seurat_clusters", samples="sample")
 sce$scDblFinder.score
 sce$scDblFinder.class
 fn_soup_skin_samples$scDblFinder.score <- sce$scDblFinder.score
-FeaturePlot(fn_soup_skin_samples, features = "scDblFinder.score")
+FeaturePlot(fn_soup_skin_samples, features = "scDblFinder.stats")
 table(sce$scDblFinder.class)
 metadata(sce)$scDblFinder.stats
 
-#add scDblFinder.class column from sce in soup_skin_samples object
+## add scDblFinder.class column from sce in soup_skin_samples object
 fn_soup_skin_samples@meta.data$isDoublet <- sce$scDblFinder.class
 
-#Doublets visualization
+## Doublets visualization
 DimPlot(fn_soup_skin_samples, reduction = 'umap', group.by = "isDoublet")
 
-#create a new object(fnd_soup_skin_samples) and delete the doublet
+## create a new object(fnd_soup_skin_samples) and filter out the doublet
 fnd_soup_skin_samples <- subset(fn_soup_skin_samples, isDoublet == "doublet")
 DimPlot(fnd_soup_skin_samples, reduction = 'umap', group.by = "isDoublet")
 DimPlot(fnd_soup_skin_samples, reduction = 'umap', label = TRUE, label.size = 3)
-
-#save new object
-saveRDS(fnd_soup_skin_samples, file = "C:/Users/pegah/Desktop/skinProject/fromTheTop/soupCorrection/fnd_soup_skin_samples.rds")
-
+# normalizing
+  fnd_soup_skin_samples %>% 
+  SCTransform(method = "glmGamPoi", vars.to.regress = "percent.mt", verbose = FALSE, vst.flavor = "v2") %>% 
+  RunPCA(npcs = 20, verbose = FALSE) %>% 
+  RunHarmony("sample", plot_convergence = TRUE, assay.use = "SCT", reduction.save = "harmony2") %>% 
+  RunUMAP(reduction = "harmony2", dims = 1:20) %>% 
+  FindNeighbors(reduction = "harmony2", dims = 1:20) %>% 
+  FindClusters(resolution = 0.5) %>% 
+  identity()
+## save the new object
+saveRDS(fndn_soup_skin_samples, file = "C:/Users/~/fnd_soup_skin_samples.rds")
+fndn_soup_skin_samples
 ## Cell cycle estimation
-
-#Next, we will use known cell cycle genes to predict in which cell cycle state cells are currently in. We will use this information later on in the clustering analysis to correct for cell cycle state, so that we don't get separate clusters of cell types that correspond to different cycle states.
+## Next, we will use known cell cycle genes to predict in which cell cycle state cells are currently in. We will use this information later on in the clustering analysis to correct for cell cycle state, so that we don't get separate clusters of cell types that correspond to different cycle states.
 
 s.genes <- cc.genes$s.genes
 g2m.genes <- cc.genes$g2m.genes
@@ -411,52 +289,8 @@ fndc_soup_skin_samples <- fnd_soup_skin_samples@meta.data  %>%
 ggplot(fndc_soup_skin_samples,aes(Phase,n, fill = Phase)) +
   geom_bar(stat ="identity") +
   scale_fill_brewer(palette = "Dark2")
-saveRDS(fndc_soup_skin_samples, file="C:/Users/pegah/Desktop/skinProject/fromTheTop/soupCorrection/fndc_soup_skin_samples.rds")
 
-# Dimensional reduction
-
-#Finally, we can start the dimensional reduction. Basically this consists of a number of steps:
-
-#1) Normalization of UMIs
-#2) Identification of variable genes
-#3) Scaling of normalized data
-#4) Principal component analysis
-#5) Clustering using UMAP and SNN graph construction
-
-#normalizing(in compute canada)
-
-fnd_soup_skin_samples <- SCTransform(fnd_soup_skin_samples, method = "glmGamPoi", vars.to.regress = "percent.mt", verbose = FALSE, vst.flavor = "v2")
-
-fnd_soup_skin_samples <- RunPCA(fnd_soup_skin_samples, verbose = FALSE)
-
-options(repr.plot.height = 5, repr.plot.width = 12)
-p1 <- DimPlot(object = fnd_soup_skin_samples, reduction = "pca", pt.size = .1, group.by = "sample")
-p2 <- VlnPlot(object = fnd_soup_skin_samples, features = "PC_1", group.by = "sample", pt.size = .1)
-p1 + p2
-
-ElbowPlot(fnd_soup_skin_samples)
-
-options(repr.plot.height = 2.5, repr.plot.width = 6)
-fnd_soup_skin_samples <- fnd_soup_skin_samples %>% 
-  RunHarmony("sample", plot_convergence = TRUE, assay.use = "SCT")
-
-harmony_embeddings <- Embeddings(fnd_soup_skin_samples, 'harmony')
-harmony_embeddings[1:5, 1:5]
-
-options(repr.plot.height = 5, repr.plot.width = 12)
-p1 <- DimPlot(object = fnd_soup_skin_samples, reduction = "harmony", pt.size = .1, group.by = "sample")
-p2 <- VlnPlot(object = fnd_soup_skin_samples, features = "harmony_1", group.by = "sample", pt.size = .1)
-p1 + p2
-
-fnd_soup_skin_samples <- fnd_soup_skin_samples %>% 
-  RunUMAP(reduction = "harmony", dims = 1:20) %>% 
-  FindNeighbors(reduction = "harmony", dims = 1:20) %>% 
-  FindClusters(resolution = 0.5) %>% 
-  identity()
-
-saveRDS(fnd_soup_skin_samples, file = "fndn_soup_skin_samples.rds")
-
-#load filtered_normalized_doubletCorrected_normalized_soup_skin_samples
+## ad filtered_normalized_doubletCorrected_normalized_soup_skin_samples
 fndn_soup_skin_samples <- readRDS("fndn_soup_skin_samples.rds")
 DimPlot(fndn_soup_skin_samples, reduction = "umap", label = TRUE, label.size = 5)
 #re-perform QC plots
