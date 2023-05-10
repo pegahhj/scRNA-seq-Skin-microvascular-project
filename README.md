@@ -448,11 +448,11 @@ fn_soup_skin_samples_cl1 <- fn_soup_skin_samples_cl1 %>%
 DimPlot(fn_soup_skin_samples_cl1, reduction = "umap", label = TRUE, label.size = 5)
 saveRDS(fn_soup_skin_samples_cl1, file = "fn_soup_skin_samples_cl1.rds")
 
-#to find markers of subcluster
+# to find markers of subcluster
 fn_soup_skin_samples_cl1 <- FindAllMarkers(object = fn_soup_skin_samples_cl1, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
 write.csv(fn_soup_skin_samples_cl1, "C:/Users/pegah/Desktop/skinProject/fromTheTop/soupCorrection/fn_soup_skin_samples_cl1.markers.csv")
 
-##finding doublets in subclusters
+## finding doublets in subclusters
 # load libraries
 BiocManager::install("plger/scDblFinder")
 BiocManager::install("SingleCellExperiment")
@@ -472,14 +472,12 @@ table(sce$scDblFinder.class)
 metadata(sce)$scDblFinder.stats
 saveRDS(fn_soup_skin_samples, file = "fn_soup_skin_samples.rds")
 
-#if doublet score inside a cluster is high in a sebcluster and that subcluster or some cells inside it are showing nonsense cell-type markers it means they are doublets and we should correct it
-
-
-##Dotplot for spesific genes
+####### _____________________ Different visualisations ___________________________
+## Dotplot for spesific genes
 cd_genes <- c("Sele", "Cldn5", "Vwf", "Cdh5", "Flt4", "Lyve1", "Prox1", "Pdpn", "Lum", "Dcn", "Vim", "Pdgfra", "Acta2", "Rgs5", "Pdgfrb", "Des", "Lyz2", "Aif1", "Cd68", "Itgax", "Pmel", "Mlana", "Tyrp1", "Dct", "Cald1", "Cnn1", "Cd3d", "Cd3g", "Cd3e", "Lck", "Krt1", "Krt10", "Sbsn", "Krtdap", "Krt5", "Krt14", "Itga6", "Itgb1")
 DotPlot(object = fndn_soup_skin_samples, features = cd_genes)
 
-#to identify how many cells are expressing specific gene
+# to identify how many cells are expressing specific gene
 df <- data.frame(p16 = (filtered_seurat@assays$RNA@counts["Cdkn2a", ] > 0),
                  sample = filtered_seurat$sample)
 
@@ -492,7 +490,7 @@ df <- data.frame(p21 = (filtered_seurat@assays$RNA@counts["Cdkn1a", ] > 0),
 p21.pos <- df %>% group_by(sample) %>% count(p21)
 p21.pos
 
-#to check genes and getting list of genes in a text file
+# to check genes and getting list of genes in a text file
 filtered_seurat@assays[["RNA"]]@data@Dimnames[[1]]["Nav1"]
 
 filtered_seurat@assays[["RNA"]]@data@Dimnames[[1]][991]
@@ -507,11 +505,12 @@ filtered_seurat@assays[["SCT"]]@data@Dimnames[[1]][25822]
 
 write.table(filtered_seurat@assays[["SCT"]]@data@Dimnames[[1]],file = "test1.txt")
 write.table(filtered_seurat@assays[["RNA"]]@data@Dimnames[[1]],file = "test1.txt")
-#to see what cell(based on no. of read ) is expressing a candidate gene
+# to see what cell(based on no. of read ) is expressing a candidate gene
 plot(soup_skin_samples@assays$RNA@data["Cdkn2a",], soup_skin_samples$nCount_RNA)
+#_______________________________________
 
-
-##subclustering for doublet validation and annotation validation
+# one way of validating doublets in the dataset is to visualize doublet score of subclusters (before filtering out doublets) and find out if the subcluster with high doublet score is expressing nonesense cell-type marker in compare to other subclusters of the same cluster
+## subclustering for doublet validation and annotation validation
 
 fn_soup_skin_samples <- readRDS("fn_soup_skin_samples.rds")
 
@@ -519,7 +518,8 @@ fn_soup_skin_samples <- fn_soup_skin_samples %>%
   FindClusters(resolution = 0.1) %>% 
   identity()
 DimPlot(fn_soup_skin_samples, reduction = "umap", label = TRUE, label.size = 5)
-##finding doublet.score in main cluster
+
+## calculating doublet.score in main cluster (before filtering doublets) if not done before
 # load libraries
 BiocManager::install("plger/scDblFinder")
 BiocManager::install("SingleCellExperiment")
@@ -537,17 +537,16 @@ FeaturePlot(fn_soup_skin_samples, features = "scDblFinder.stats")
 sce$scDblFinder.score %>% hist
 table(sce$scDblFinder.class)
 metadata(sce)$scDblFinder.stats
-saveRDS(fn_soup_skin_samples, file = "C:/Users/pegah/Desktop/skinProject/fromTheTop/soupCorrection/fn_soup_skin_samples_doublet.rds")
+saveRDS(fn_soup_skin_samples, file = "C:/Users/~/fn_soup_skin_samples_doublet.rds")
 
-##to subset target clusters and remove others
-#you can subset one or more clusters in your data set and remove others 
+## subsetting target clusters and remove others
+# you can subset one or more clusters in your data set and remove others 
 fn_soup_skin_samples_doublet <- readRDS("fn_soup_skin_samples_doublet.rds")
 DimPlot(fn_soup_skin_samples_doublet, reduction = "umap", label = TRUE, label.size = 5)
 FeaturePlot(fn_soup_skin_samples_doublet, features = "scDblFinder.stats")
 fn_soup_skin_samples_wDoublet_rmKrt <- subset(fn_soup_skin_samples_doublet, subset = seurat_clusters %in% c('1', '2', '5', '6', '7', '8', '12', '13', '14', '15', '16', '17', '18', '19', '20'))
 
-##to reperfom clustering for subclusters
-#in case that needs to change assay use below code before clustering (here we have two assay--> RNA and SCT)
+## reperfoming clustering for subclusters
 DefaultAssay(fn_soup_skin_samples_wDoublet_rmKrt) <- "SCT"
 
 fn_soup_skin_samples_wDoublet_rmKrt <- fn_soup_skin_samples_wDoublet_rmKrt %>% 
@@ -566,11 +565,11 @@ saveRDS(fn_soup_skin_samples_wDoublet_rmKrt, file = "fn_soup_skin_samples_wDoubl
 
 fn_soup_skin_samples_wDoublet_rmKrt <- readRDS("fn_soup_skin_samples_wDoublet_rmKrt.rds")
 
-##finding-visiualizing doublets in subclusters
+## finding-visiualizing doublets in subclusters
 FeaturePlot(fn_soup_skin_samples_wDoublet_rmKrt, features = "scDblFinder.stats", label = TRUE)
 FeaturePlot(fn_soup_skin_samples_wDoublet_rmKrt, features = "percent.mt", label = TRUE)
 
-#perform embedding on UMAP with 0.1 resolution to have more generalized clusters to be able to sub-cluster better
+# performing embedding on UMAP with 0.1 resolution to have more generalized clusters to be able to sub-cluster better
 fn_soup_skin_samples_wDoublet_rmKrt0.1 <- fn_soup_skin_samples_wDoublet_rmKrt %>% 
   FindClusters(resolution = 0.1) %>% 
   identity()
@@ -581,21 +580,21 @@ saveRDS(fn_soup_skin_samples_wDoublet_rmKrt0.1, file = "fn_soup_skin_samples_wDo
 
 FeaturePlot(fn_soup_skin_samples_wDoublet_rmKrt0.1, features = "scDblFinder.stats", label = TRUE, label.size = 5)
 
-#if doublet score inside a cluster is high in a sebcluster and that subcluster or some cells inside it are showing nonsense cell-type markers it means they are doublets and we should correct it
+# if doublet score inside a cluster is high in a sebcluster and that subcluster or some cells inside it are showing nonsense cell-type markers it means they are doublets and we should correct it
 
-##to rename clusters
+## to rename clusters
 new.cluster.ids <- c("0-Muscle cells", "1-vSMC-FB-myoFB", "2-Langerhans cells (dendritic cells)","3-EC", "4-basal cell of epidermis", "5-Epidermal cell-adipocyte", "6-Myocyte", "7-Adipocyte", "8-FB?", "9-SMC-vSMC", "10-Melanocyte", "11-?")
 names(new.cluster.ids) <- levels(fn_soup_skin_samples_wDoublet_rmKrt0.1)
 fn_soup_skin_samples_wDoublet_rmKrt0.1 <- RenameIdents(fn_soup_skin_samples_wDoublet_rmKrt0.1, new.cluster.ids)
 DimPlot(fn_soup_skin_samples_wDoublet_rmKrt0.1, reduction = "umap", label = TRUE, pt.size = 1.2, label.size = 3)
 
-#save new object
+# saving new object
 saveRDS(fn_soup_skin_samples_wDoublet_rmKrt0.1, file = "C:/Users/pegah/Desktop/skinProject/fromTheTop/soupCorrection/fn_soup_skin_samples_wDoublet_rmKrt0.1.rds")
 
-#2023-01-04 subset cluster 0
+# subset cluster 0
 fn_soup_skin_samples_wDoublet_rmKrt0.1_cl0 <- subset(fn_soup_skin_samples_wDoublet_rmKrt0.1, subset = seurat_clusters %in% c('0'))
 
-#perform PCA, UMAP, FindClusters for cl0
+# performing PCA, UMAP, FindClusters for cl0
 fn_soup_skin_samples_wDoublet_rmKrt0.1_cl0 <- fn_soup_skin_samples_wDoublet_rmKrt0.1_cl0 %>% 
   SCTransform(method = "glmGamPoi", vars.to.regress = "percent.mt", verbose = FALSE, vst.flavor = "v2") %>% 
   RunPCA(npcs = 20, verbose = FALSE) %>% 
@@ -607,29 +606,27 @@ fn_soup_skin_samples_wDoublet_rmKrt0.1_cl0 <- fn_soup_skin_samples_wDoublet_rmKr
 
 DimPlot(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl0, reduction = "umap", label = TRUE, label.size = 5)
 fn_soup_skin_samples_wDoublet_rmKrt0.1_cl0.markers <- FindAllMarkers(object = fn_soup_skin_samples_wDoublet_rmKrt0.1_cl0, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
-write.csv(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl0.markers, "C:/Users/pegah/Desktop/skinProject/fromTheTop/soupCorrection/fn_soup_skin_samples_wDoublet_rmKrt0.1_cl0.markers.csv")
+write.csv(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl0.markers, "C:/Users/~/fn_soup_skin_samples_wDoublet_rmKrt0.1_cl0.markers.csv")
 saveRDS(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl0, file = "fn_soup_skin_samples_wDoublet_rmKrt0.1_cl0.rds")
 
-#doublet score subclusters in cl0
+# doublet score subclusters in cl0
 FeaturePlot(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl0, features = "scDblFinder.stats", label = TRUE, label.size = 5)
 
-#2023-01-05 to continue annotating cl0
-
-fn_soup_skin_samples_wDoublet_rmKrt0.1_cl0 <- readRDS("fn_soup_skin_samples_wDoublet_rmKrt0.1_cl0.rds")
-##to rename sub-clusters in cl0
+# fn_soup_skin_samples_wDoublet_rmKrt0.1_cl0 <- readRDS("fn_soup_skin_samples_wDoublet_rmKrt0.1_cl0.rds")
+## renaming sub-clusters in cl0
 new.cluster.ids <- c("0-SMC", "1-Myocyte", "2-Basal cell of epidermis","3-Mayocyte", "4-SMC", "5-SMC", "6-Myocyte", "7-Myocyte", "8-vSMC", "9-Satellite cells", "10-EC-FB", "11-Myocyte-pericyte")
 names(new.cluster.ids) <- levels(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl0)
 fn_soup_skin_samples_wDoublet_rmKrt0.1_cl0 <- RenameIdents(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl0, new.cluster.ids)
 DimPlot(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl0, reduction = "umap", label = TRUE, pt.size = 1.2, label.size = 5)
 saveRDS(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl0, file = "fn_soup_skin_samples_wDoublet_rmKrt0.1_cl0.rds")
 
-#subset cluster 1
+# subset cluster 1
 fn_soup_skin_samples_wDoublet_rmKrt0.1 <- readRDS("fn_soup_skin_samples_wDoublet_rmKrt0.1.rds")
 DimPlot(fn_soup_skin_samples_wDoublet_rmKrt0.1, reduction = "umap", label = TRUE, label.size = 5)
 
 fn_soup_skin_samples_wDoublet_rmKrt0.1_cl1 <- subset(fn_soup_skin_samples_wDoublet_rmKrt0.1, subset = seurat_clusters %in% c('1'))
 
-#perform PCA, UMAP, FindClusters for cl1
+# perform PCA, UMAP, FindClusters for cl1
 fn_soup_skin_samples_wDoublet_rmKrt0.1_cl1 <- fn_soup_skin_samples_wDoublet_rmKrt0.1_cl1 %>% 
   SCTransform(method = "glmGamPoi", vars.to.regress = "percent.mt", verbose = FALSE, vst.flavor = "v2") %>% 
   RunPCA(npcs = 20, verbose = FALSE) %>% 
@@ -645,86 +642,28 @@ write.csv(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl1.markers, "C:/Users/pegah/De
 saveRDS(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl1, file = "fn_soup_skin_samples_wDoublet_rmKrt0.1_cl1.rds")
 fn_soup_skin_samples_wDoublet_rmKrt0.1_cl1 <- readRDS("fn_soup_skin_samples_wDoublet_rmKrt0.1_cl1.rds")
 
-#doublet score subclusters in cl1
+# visualizing doublet score subclusters in cl1
 FeaturePlot(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl1, features = "scDblFinder.stats", label = TRUE, label.size = 5)
 
-##to rename sub-clusters in cl1
+## renaming sub-clusters in cl1
 new.cluster.ids <- c("0-vSMC", "1-Fibroblasts", "2-Fibroblasts","3-Basal cell of epidermis", "4-vSMC-SMC", "5-vSMC", "6-Myofibroblasts-vSMC", "7-Satellite cells-Myocyte", "8-Myocyte", "9-Schwann Cells", "10-SMC", "11-?", "12-SMC", "13-Keratinocytes")
 names(new.cluster.ids) <- levels(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl1)
 fn_soup_skin_samples_wDoublet_rmKrt0.1_cl1 <- RenameIdents(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl1, new.cluster.ids)
 DimPlot(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl1, reduction = "umap", label = TRUE, pt.size = 1.2, label.size = 5)
 saveRDS(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl1, file = "fn_soup_skin_samples_wDoublet_rmKrt0.1_cl1.rds")
 
-#2023-01-19 subset cluster 3
-fn_soup_skin_samples_wDoublet_rmKrt0.1_cl3 <- subset(fn_soup_skin_samples_wDoublet_rmKrt0.1, subset = seurat_clusters %in% c('3'))
-
-#perform PCA, UMAP, FindClusters for cl3
-fn_soup_skin_samples_wDoublet_rmKrt0.1_cl3 <- fn_soup_skin_samples_wDoublet_rmKrt0.1_cl3 %>% 
-  SCTransform(method = "glmGamPoi", vars.to.regress = "percent.mt", verbose = FALSE, vst.flavor = "v2") %>% 
-  RunPCA(npcs = 20, verbose = FALSE) %>% 
-  RunHarmony("sample", plot_convergence = TRUE, assay.use = "SCT", reduction.save = "harmony2") %>% 
-  RunUMAP(reduction = "harmony2", dims = 1:20) %>% 
-  FindNeighbors(reduction = "harmony2", dims = 1:20) %>% 
-  FindClusters(resolution = 0.5) %>% 
-  identity()
-
-DimPlot(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl3, reduction = "umap", label = TRUE, label.size = 5)
-fn_soup_skin_samples_wDoublet_rmKrt0.1_cl3.markers <- FindAllMarkers(object = fn_soup_skin_samples_wDoublet_rmKrt0.1_cl3, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
-write.csv(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl3.markers, "C:/Users/pegah/Desktop/skinProject/fromTheTop/soupCorrection/fn_soup_skin_samples_wDoublet_rmKrt0.1_cl3.markers.csv")
-saveRDS(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl3, file = "fn_soup_skin_samples_wDoublet_rmKrt0.1_cl3.rds")
-
-#doublet score subclusters in cl3
-FeaturePlot(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl3, features = "scDblFinder.stats", label = TRUE, label.size = 5)
-
-##to rename sub-clusters in cl3
-new.cluster.ids <- c("0-vEC", "1-EC", "2-EC","3-lEC", "4-Basal cell of Epidermis", "5-vEC", "6-Keratinocyte", "7-Myocyte")
-names(new.cluster.ids) <- levels(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl3)
-fn_soup_skin_samples_wDoublet_rmKrt0.1_cl3 <- RenameIdents(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl3, new.cluster.ids)
-DimPlot(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl3, reduction = "umap", label = TRUE, pt.size = 1.2, label.size = 5)
-saveRDS(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl3, file = "fn_soup_skin_samples_wDoublet_rmKrt0.1_cl3.rds")
-
-#2023-01-19 subset cluster ?
-fn_soup_skin_samples_wDoublet_rmKrt0.1 <- readRDS("fn_soup_skin_samples_wDoublet_rmKrt0.1.rds")
-fn_soup_skin_samples_wDoublet_rmKrt0.1_cl11 <- subset(fn_soup_skin_samples_wDoublet_rmKrt0.1, subset = seurat_clusters %in% c('11'))
-
-
-#perform PCA, UMAP, FindClusters for cl?
-fn_soup_skin_samples_wDoublet_rmKrt0.1_cl11 <- fn_soup_skin_samples_wDoublet_rmKrt0.1_cl11 %>% 
-  SCTransform(method = "glmGamPoi", vars.to.regress = "percent.mt", verbose = FALSE, vst.flavor = "v2") %>% 
-  RunPCA(npcs = 20, verbose = FALSE) %>% 
-  RunHarmony("sample", plot_convergence = TRUE, assay.use = "SCT", reduction.save = "harmony2") %>% 
-  RunUMAP(reduction = "harmony2", dims = 1:20) %>% 
-  FindNeighbors(reduction = "harmony2", dims = 1:20) %>% 
-  FindClusters(resolution = 0.5) %>% 
-  identity()
-
-DimPlot(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl11, reduction = "umap", label = TRUE, label.size = 5)
-fn_soup_skin_samples_wDoublet_rmKrt0.1_cl11.markers <- FindAllMarkers(object = fn_soup_skin_samples_wDoublet_rmKrt0.1_cl11, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
-write.csv(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl11.markers, "C:/Users/pegah/Desktop/skinProject/fromTheTop/soupCorrection/fn_soup_skin_samples_wDoublet_rmKrt0.1_cl11.markers.csv")
-saveRDS(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl11, file = "fn_soup_skin_samples_wDoublet_rmKrt0.1_cl11.rds")
-
-#doublet score subclusters in cl?
-FeaturePlot(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl11, features = "scDblFinder.stats", label = TRUE, label.size = 5)
-
-##to rename sub-clusters in cl?
-new.cluster.ids <- c("0-Mesenchymal stem cell", "1-Keratinocyte")
-names(new.cluster.ids) <- levels(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl11)
-fn_soup_skin_samples_wDoublet_rmKrt0.1_cl11 <- RenameIdents(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl11, new.cluster.ids)
-DimPlot(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl11, reduction = "umap", label = TRUE, pt.size = 1.2, label.size = 5)
-saveRDS(fn_soup_skin_samples_wDoublet_rmKrt0.1_cl11, file = "fn_soup_skin_samples_wDoublet_rmKrt0.1_cl11.rds")
-
-##to remove doublets from fn_soup_skin_samples_wDoublet_rmKrt and then validate clusters with key genes
+## to remove doublets from fn_soup_skin_samples_wDoublet_rmKrt and then validate clusters with key genes
 fn_soup_skin_samples_wDoublet_rmKrt <- readRDS("fn_soup_skin_samples_wDoublet_rmKrt.rds")
 
-#add scDblFinder.class column from sce in fn_soup_skin_samples_wDoublet_rmKrt object
+# add scDblFinder.class column from sce in fn_soup_skin_samples_wDoublet_rmKrt object
 DefaultAssay(fn_soup_skin_samples_wDoublet_rmKrt) <- "RNA"
 
 fn_soup_skin_samples_wDoublet_rmKrt@meta.data$isDoublet <- sce$scDblFinder.class
 
-#Doublets visualization
+# Doublets visualization
 DimPlot(fn_soup_skin_samples, reduction = 'umap', group.by = "isDoublet")
 
-#create a new object(fnd_soup_skin_samples) and delete the doublet
+# create a new object(fnd_soup_skin_samples) and delete the doublet
 fnd_soup_skin_samples <- subset(fn_soup_skin_samples, isDoublet == "doublet")
 DimPlot(fnd_soup_skin_samples, reduction = 'umap', group.by = "isDoublet")
 DimPlot(fnd_soup_skin_samples, reduction = 'umap', label = TRUE, label.size = 3)
@@ -734,10 +673,6 @@ fnd_soup_skin_samples <- readRDS("fnd_soup_skin_samples.rds")
 ## DESeq2 differentialy gene expression
 # script to perform pseudo-bulk DGA
 # setwd("~/Desktop/demo/single_cell_DEG")
-#Pseudo-bulk analysis for single-cell RNA-Seq data | Detailed workflow tutorial
-#https://github.com/kpatel427/YouTubeTutorials/blob/main/singleCell_pseudoBulk.R
-#https://www.youtube.com/watch?v=04gB2owLKus
-
 library(ExperimentHub)
 library(Seurat)
 library(DESeq2)
@@ -804,7 +739,7 @@ cts.split.modified <- lapply(cts.split, function(x){
 
 
 
-# Let's run DE analysis with EC 
+# running DE analysis with EC 
 # 1. Get counts matrix
 counts_EC <- cts.split.modified$`2-EC`
 
@@ -816,16 +751,13 @@ colData <- data.frame(samples = colnames(counts_EC),
 
 colData
 
-# get more information from metadata
-
-
-
 # perform DESeq2 --------
 
-#make sure the row names in colData matches to column names in counts data (here count_EC) if it is not TRUE whatch the tutorial https://www.youtube.com/watch?v=nks7ibkBud8
+#make sure the row names in colData matches to column names in counts data (here count_EC) 
 
 all(colnames(counts_EC) %in% rownames(colData))
-#if it is FALSE run #counts_EC <- counts_EC[, rownames(colData)]
+#if it is FALSE run
+counts_EC <- counts_EC[, rownames(colData)]
 
 # Create DESeq2 object   
 dds <- DESeqDataSetFromMatrix(countData = counts_EC,
@@ -837,7 +769,8 @@ dds <- DESeqDataSetFromMatrix(countData = counts_EC,
 
 keep <- rowSums(counts(dds)) >=10
 dds <- dds[keep,]
-###plots
+
+### plots
 # Transform counts for data visualization
 rld <- rlog(dds, blind=TRUE)
 
@@ -868,7 +801,7 @@ write.csv(normCountsDDS, "normCountsDDS.csv")
 # Plot dispersion estimates
 plotDispEsts(dds)
 
-#results to compare each two condition
+# results to compare each two condition
 res_tr_veh <- results(dds, contrast=c("condition","tr","veh"))
 res_veh_young <- results(dds, contrast=c("condition","veh","young"))
 res_tr_young <- results(dds, contrast=c("condition","tr","young"))
@@ -878,49 +811,23 @@ write.table(res_tr_veh, file="deseq2_out_tr_veh", quote=FALSE, sep="\t")
 write.table(res_veh_young, file="deseq2_out_veh_young", quote=FALSE, sep="\t")
 write.table(res_tr_young, file="deseq2_out_tr_young", quote=FALSE, sep="\t")
 
-##Explore more
-#explore results
+## Explore more
+# explore results
 summary(res_tr_veh)
 summary(res_veh_young)
 summary(res_tr_young)
 
-#MA plot
+# MA plot
 plotMA(res_tr_veh)
 plotMA(res_veh_young)
 plotMA(res_tr_young)
 
-#!!!!!!!!!!!!!________________________________________________________
-#to be checked !!!!!!!!!!!!!!
-#Extracting significant differentially expressed genes
-#https://hbctraining.github.io/DGE_workshop/lessons/05_DGE_DESeq2_analysis2.html
-### Set thresholds
-padj.cutoff <- 0.05
-lfc.cutoff <- 0.58
-
-#convert the results table into a tibble
-res_tableOE_tb <- res_tableOE %>%
-  data.frame() %>%
-  rownames_to_column(var="gene") %>% 
-  as_tibble()
-
-#subset that table to only keep the significant genes using our pre-defined thresholds:
-sigOE <- res_tableOE_tb %>%
-  filter(padj < padj.cutoff & abs(log2FoldChange) > lfc.cutoff)
-
-#How many genes are differentially expressed in the Overexpression compared to Control, given our criteria specified above? Does this reduce our results?
-sigOE
-#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!___________________________________
-
-
-
-
-
-##to check batch effect on deseq 
+## checking batch effect on deseq 
 # Extract metadata to create new object
 
 metadata <- seu.filtered@meta.data
 
-# Set up metadata as desired for aggregation and DE analysis
+# Setting up metadata as desired for aggregation and DE analysis
 metadata$cluster_id <- factor(seu.filtered@active.ident)
 metadata$samples_id <- paste0(seu.filtered$condition, seu.filtered$sample)
 #metadata$batch_id <- factor(seu.filtered$condition, seu.filtered$batch)
@@ -986,10 +893,11 @@ colData <- data.frame(samples = colnames(counts_EC),
 
 # perform DESeq2 --------
 
-#make sure the row names in colData matches to column names in counts data (here count_EC) if it is not TRUE whatch the tutorial https://www.youtube.com/watch?v=nks7ibkBud8
+#make sure the row names in colData matches to column names in counts data (here count_EC) 
 
 all(colnames(counts_EC) %in% rownames(colData))
-#if it is FALSE run #counts_EC <- counts_EC[, rownames(colData)]
+#if it is FALSE run
+counts_EC <- counts_EC[, rownames(colData)]
 
 # Create DESeq2 object   
 dds <- DESeqDataSetFromMatrix(countData = counts_EC,
@@ -1005,8 +913,6 @@ dds <- dds[keep,]
 # Transform counts for data visualization
 rld <- rlog(dds, blind=TRUE)
 vsd <- vst(dds, blind=FALSE)
-#of the best workflows about DESeq https://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#principal-component-plot-of-the-samples
-##!pheatmap https://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#principal-component-plot-of-the-samples
 ntd <- normTransform(dds)
 
 library("pheatmap")
@@ -1017,8 +923,8 @@ pheatmap(assay(ntd)[select,], cluster_rows=FALSE, show_rownames=FALSE,
          cluster_cols=FALSE, annotation_col=df)
 
 
-##Heatmap of the sample-to-sample distances
-#apply the dist function to the transpose of the transformed count matrix to get sample-to-sample distances.
+## Heatmap of the sample-to-sample distances
+# apply the dist function to the transpose of the transformed count matrix to get sample-to-sample distances.
 sampleDists <- dist(t(assay(vsd)))
 
 #this heatmap function would calculate a clustering based on the distances between the rows/columns of the distance matrix
