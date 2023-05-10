@@ -245,7 +245,7 @@ sce <- scDblFinder(sce, clusters = "seurat_clusters", samples="sample")
 sce$scDblFinder.score
 sce$scDblFinder.class
 fn_soup_skin_samples$scDblFinder.score <- sce$scDblFinder.score
-FeaturePlot(fn_soup_skin_samples, features = "scDblFinder.stats")
+FeaturePlot(fn_soup_skin_samples, features = "scDblFinder.score")
 table(sce$scDblFinder.class)
 metadata(sce)$scDblFinder.stats
 
